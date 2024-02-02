@@ -1,0 +1,7 @@
+/.direnv/
+.envrc
+/scratch/
+
+__pycache__/
+build/
+*.egg-info
