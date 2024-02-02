@@ -1,5 +1,6 @@
 import argparse
 import inspect
+import json
 import logging
 from typing import Any
 
@@ -13,12 +14,16 @@ class CommandLine:
     def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
         self._log_option: str | None = None
+        self.query: str | None = None
+        self.country: str
+        self.known_comps_file: str | None = None
 
     def execute(self) -> int:
         self.parse_arguments()
         logging.basicConfig(level=self.log_level)
         competitions = self.fetch_competitions()
-        self.print_competitions(competitions)
+        filtered_competitions = self.filter_competitions(competitions)
+        self.print_competitions(filtered_competitions)
         return 0
 
     def parse_arguments(self) -> None:
@@ -26,7 +31,16 @@ class CommandLine:
         parser.add_argument(
             "query", type=str, help="query string", nargs="?", default=None
         )
-        parser.add_argument("-c", "--country", type=str, help="country", default="US")
+        parser.add_argument(
+            "-c", "--country", type=str, help="ISO country code", default="US"
+        )
+        parser.add_argument(
+            "-k",
+            "--known",
+            type=str,
+            help="known competitions JSON file",
+            metavar="FILE",
+        )
         parser.add_argument(
             "-L",
             "--log",
@@ -39,6 +53,7 @@ class CommandLine:
 
         self.query = args.query
         self.country = args.country
+        self.known_comps_file = args.known
         self._log_option = args.log
 
     def fetch_competitions(self) -> list[Competition]:
@@ -56,6 +71,34 @@ class CommandLine:
         competition = Competition.from_dict(dict)
         self.logger.debug("Converted competition %r", competition)
         return competition
+
+    def filter_competitions(self, competitions: list[Competition]) -> list[Competition]:
+        if self.known_comps_file is None:
+            return competitions
+
+        known_comps = self.read_known_comps_file(self.known_comps_file)
+        self.logger.debug("Known comps: %r" % known_comps)
+        filtered_comps = [c for c in competitions if c.id not in known_comps]
+        self.logger.debug("Filtered comps: %r" % filtered_comps)
+        new_known_comps = [c.id for c in competitions]
+        self.logger.debug("New known comps: %r" % new_known_comps)
+        self.write_known_comps_file(self.known_comps_file, new_known_comps)
+        return filtered_comps
+
+    def read_known_comps_file(self, file: str) -> list[str]:
+        self.logger.info("Reading known comps file: %r" % file)
+        try:
+            with open(file) as f:
+                known_comps = json.load(f)
+        except FileNotFoundError:
+            known_comps = []
+
+        return known_comps
+
+    def write_known_comps_file(self, file: str, known_comps: list[str]) -> None:
+        self.logger.info("Writing known comps file: %r" % file)
+        with open(file, mode="w") as f:
+            json.dump(known_comps, f, indent=2)
 
     def print_competitions(self, competitions: list[Competition]) -> None:
         env = Environment(

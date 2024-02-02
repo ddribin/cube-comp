@@ -1,3 +1,13 @@
+{% set count = competitions | length %}
+{% if count is eq 0 %}
+No competitions.
+{% elif count is eq 1 %}
+{{ count }} Competition:
+
+{% else %}
+{{ count }} Competitions:
+
+{% endif %}
 {% for comp in competitions %}
 Date: {{ comp.start_date }}
 Name: {{ comp.name }}
