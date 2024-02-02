@@ -17,8 +17,7 @@ class Competition:
 
     # Optional
     display_name: str | None
-
-
+    
     @classmethod
     def from_dict(cls, dict: dict) -> Competition:
         return cls(

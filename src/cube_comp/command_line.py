@@ -3,8 +3,11 @@ import requests
 from datetime import date
 from jinja2 import Environment, PackageLoader, select_autoescape
 import logging
+import inspect
+from typing import Any
 
 from .competition import Competition
+from .wca_service import WCAEndpoint
 
 class CommandLine:
     def __init__(self) -> None:
@@ -37,23 +40,12 @@ class CommandLine:
         self._log_option = args.log
     
     def fetch_competitions(self) -> list[Competition]:
-        # https://docs.worldcubeassociation.org/knowledge_base/v0_api.html
-        url = "https://www.worldcubeassociation.org/api/v0/competitions"
-        today = date.today().isoformat()
-        payload = {"start": today}
-        if self.query:
-            payload["q"] = self.query
-        if self.country:
-            payload["country_iso2"] = self.country
-        self.logger.info("Sending request to URL %r with payload %r", url, payload)
-        response = requests.get(url, params=payload)
-        self.logger.info("Got response %r", response)
-        response.raise_for_status()
-        json_competitions = response.json()
+        service = WCAEndpoint()
+        json_competitions = service.fetch_competitions(query = self.query, country = self.country)
         competitions = [self.competition_from_dict(json_comp) for json_comp in json_competitions]
         return competitions
     
-    def competition_from_dict(self, dict: dict) -> Competition:
+    def competition_from_dict(self, dict: dict[str, Any]) -> Competition:
         self.logger.debug("Converting competition:\n%r", dict)
         competition = Competition.from_dict(dict)
         self.logger.debug("Converted competition %r", competition)
@@ -69,6 +61,7 @@ class CommandLine:
         )
         template = env.get_template("competitions.txt.j2")
         rendered = template.render(competitions=competitions)
+        rendered = inspect.cleandoc(rendered)
         print(rendered)
         
     @property
