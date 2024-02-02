@@ -1,10 +1,11 @@
 import argparse
-import requests
-from datetime import date
-from jinja2 import Environment, PackageLoader, select_autoescape
-import logging
 import inspect
+import logging
+from datetime import date
 from typing import Any
+
+import requests
+from jinja2 import Environment, PackageLoader, select_autoescape
 
 from .competition import Competition
 from .wca_service import WCAEndpoint

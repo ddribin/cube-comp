@@ -1,8 +1,9 @@
-from typing_extensions import Protocol
-from typing import Any
-import requests
 import logging
 from datetime import date
+from typing import Any
+
+import requests
+from typing_extensions import Protocol
 
 
 class WCAService(Protocol):

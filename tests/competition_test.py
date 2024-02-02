@@ -1,6 +1,7 @@
-import pytest
-from typing import Any
 from datetime import date
+from typing import Any
+
+import pytest
 
 from cube_comp import Competition
 
