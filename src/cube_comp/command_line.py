@@ -1,6 +1,9 @@
 import argparse
 import inspect
 import logging
+import smtplib
+import sys
+from email.message import EmailMessage
 from typing import Any
 
 from jinja2 import Environment, PackageLoader, select_autoescape
@@ -10,24 +13,43 @@ from .known_competitions import KnownCompetitions
 from .wca_service import WCAEndpoint
 
 
+class CommandError(Exception):
+    pass
+
+
 class CommandLine:
     def __init__(self) -> None:
         self.logger = logging.getLogger(__name__)
         self._log_option: str | None = None
+        self.prog: str
         self.query: str | None = None
         self.country: str
         self.known_comps_file: str | None = None
+        self.email_to: str | None = None
+        self.email_from: str | None = None
+        self.email_host = "localhost"
+        self.email_port = 0
 
     def execute(self) -> int:
-        self.parse_arguments()
+        try:
+            self.parse_arguments()
+            self.run()
+            return 0
+        except CommandError as e:
+            message = e.args[0]
+            sys.stderr.write(f"{self.prog}: {message}\n")
+            result = e.args[1] if len(e.args) == 2 else 1
+            return result
+
+    def run(self) -> None:
         logging.basicConfig(level=self.log_level)
         competitions = self.fetch_competitions()
         filtered_competitions = self.filter_competitions(competitions)
-        self.print_competitions(filtered_competitions)
-        return 0
+        self.output_competitions(filtered_competitions)
 
     def parse_arguments(self) -> None:
         parser = argparse.ArgumentParser()
+        self.prog = parser.prog
         parser.add_argument(
             "query", type=str, help="query string", nargs="?", default=None
         )
@@ -42,6 +64,20 @@ class CommandLine:
             metavar="FILE",
         )
         parser.add_argument(
+            "--email-to", type=str, help="Email output to ADDRESS", metavar="ADDRESS"
+        )
+        parser.add_argument(
+            "--email-from",
+            type=str,
+            help="Use ADDRESS as From address",
+            metavar="ADDRESS",
+        )
+        parser.add_argument(
+            "--email-host", type=str, help="Email server host", metavar="HOST"
+        )
+        parser.add_argument("--email-port", type=int, help="Email server port")
+
+        parser.add_argument(
             "-L",
             "--log",
             choices=["debug", "info", "warning", "error"],
@@ -54,6 +90,13 @@ class CommandLine:
         self.query = args.query
         self.country = args.country
         self.known_comps_file = args.known
+
+        self.email_to = args.email_to
+        self.email_from = args.email_from
+        if args.email_host is not None:
+            self.email_host = args.email_host
+        self.email_port = args.email_port
+
         self._log_option = args.log
 
     def fetch_competitions(self) -> list[Competition]:
@@ -81,7 +124,48 @@ class CommandLine:
         filtered_comps = known_comps.filter_competitions(competitions)
         return filtered_comps
 
+    def output_competitions(self, competitions: list[Competition]) -> None:
+        if self.email_to is None:
+            self.print_competitions(competitions)
+        else:
+            self.email_competitions(competitions, self.email_to)
+
     def print_competitions(self, competitions: list[Competition]) -> None:
+        rendered = self.render_competitions(competitions)
+        print(rendered)
+
+    def email_competitions(
+        self, competitions: list[Competition], email_address: str
+    ) -> None:
+        if len(competitions) > 0:
+            self.logger.info(
+                "Emailing %r competitions to %r", len(competitions), email_address
+            )
+            self.send_email(competitions, email_address)
+        else:
+            self.logger.info("No competitions, so skipping email")
+
+    def send_email(self, competitions: list[Competition], email_address: str) -> None:
+        try:
+            rendered = self.render_competitions(competitions)
+            from_address = (
+                self.email_from if self.email_from is not None else self.email_to
+            )
+            msg = EmailMessage()
+            msg.set_content(rendered)
+            msg["Subject"] = "WCA Competition Notification"
+            msg["To"] = email_address
+            msg["From"] = from_address
+
+            s = smtplib.SMTP(self.email_host, port=self.email_port)
+            s.send_message(msg)
+            s.quit()
+        except ConnectionRefusedError:
+            raise CommandError(
+                f"Cannot send email: Connection refused: {self.email_host}"
+            )
+
+    def render_competitions(self, competitions: list[Competition]) -> str:
         env = Environment(
             loader=PackageLoader("cube_comp"),
             autoescape=select_autoescape(),
@@ -92,7 +176,7 @@ class CommandLine:
         template = env.get_template("competitions.txt.j2")
         rendered = template.render(competitions=competitions)
         rendered = inspect.cleandoc(rendered)
-        print(rendered)
+        return rendered
 
     @property
     def log_level(self) -> int:
