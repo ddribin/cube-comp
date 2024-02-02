@@ -1,37 +1,10 @@
-from __future__ import annotations
-
 import argparse
 import requests
-from dataclasses import dataclass, field
 from datetime import date
 from jinja2 import Environment, PackageLoader, select_autoescape
 import logging
 
-@dataclass
-class Competition:
-    id: str
-    name: str
-    short_name: str
-    display_name: str
-    start_date: date
-    results_posted: bool
-    city: str
-    venue: str
-    website: str
-
-    @classmethod
-    def from_dict(cls, dict: dict) -> Competition:
-        return cls(
-            id = dict["id"],
-            name = dict["name"],
-            short_name = dict["short_name"],
-            display_name = dict.get("short_display_name", ""),
-            start_date = date.fromisoformat(dict["start_date"]),
-            results_posted = dict["results_posted_at"] is None,
-            city = dict["city"],
-            venue = dict["venue"],
-            website = dict["website"],
-        )
+from .competition import Competition
 
 class CommandLine:
     def __init__(self) -> None:

@@ -1,6 +1,7 @@
 /.direnv/
 .envrc
 /scratch/
+/.vscode/settings.json
 
 __pycache__/
 build/
