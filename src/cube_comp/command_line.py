@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import requests
 from dataclasses import dataclass, field
 from datetime import date
@@ -33,16 +34,30 @@ class Competition:
 
 class CommandLine:
     def execute(self) -> int:
+        self.parse_arguments()
         competitions = self.fetch_competitions()
         self.print_competitions(competitions)
-
         return 0
+        
+    def parse_arguments(self) -> None:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("query", type=str, help="query string", nargs='?', default=None)
+        parser.add_argument("-c", "--country", type=str, help="country", default="US")
+
+        args = parser.parse_args()
+
+        self.query = args.query
+        self.country = args.country
     
     def fetch_competitions(self) -> list[Competition]:
         # https://docs.worldcubeassociation.org/knowledge_base/v0_api.html
         url = "https://www.worldcubeassociation.org/api/v0/competitions"
         today = date.today().isoformat()
-        payload = {"q": "Illinois", "country_iso2": "US", "start": today}
+        payload = {"start": today}
+        if self.query:
+            payload["q"] = self.query
+        if self.country:
+            payload["country_iso2"] = self.country
         r = requests.get(url, params=payload)
         r.raise_for_status()
         json_competitions = r.json()
