@@ -1,14 +1,17 @@
-
 from typing_extensions import Protocol
 from typing import Any
 import requests
 import logging
 from datetime import date
 
+
 class WCAService(Protocol):
-    def fetch_competitions(self, query: str | None, country: str | None, sort_desc = False) -> list[dict[str, Any]]:
+    def fetch_competitions(
+        self, query: str | None, country: str | None, sort_desc=False
+    ) -> list[dict[str, Any]]:
         "Fetches competitions with optional parameters"
         ...
+
 
 # Basic documentation about the API:
 # https://docs.worldcubeassociation.org/knowledge_base/v0_api.html
@@ -29,7 +32,9 @@ class WCAEndpoint(WCAService):
         url = self._base_url + "/competitions"
         return url
 
-    def fetch_competitions(self, query: str | None, country: str | None, sort_desc = False) -> list[dict[str, Any]]:
+    def fetch_competitions(
+        self, query: str | None, country: str | None, sort_desc=False
+    ) -> list[dict[str, Any]]:
         url = self._competitions_url
         today = date.today().isoformat()
         payload = {"start": today, "sort": "start_date"}
@@ -43,4 +48,3 @@ class WCAEndpoint(WCAService):
         response.raise_for_status()
         json_competitions = response.json()
         return json_competitions
-

@@ -4,6 +4,7 @@ from datetime import date
 
 from cube_comp import Competition
 
+
 class TestCompetion:
     @property
     def minimal_dict(self) -> dict[str, Any]:
@@ -18,7 +19,6 @@ class TestCompetion:
             "website": "https://example.com/AnID/",
         }
         return dict
-
 
     def test_parse_minimally_valid_dict(self) -> None:
         dict = self.minimal_dict
