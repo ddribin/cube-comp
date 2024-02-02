@@ -1,12 +1,10 @@
 from datetime import date
 from typing import Any
 
-import pytest
-
 from cube_comp import Competition
 
 
-class TestCompetion:
+class TestCompetition:
     @property
     def minimal_dict(self) -> dict[str, Any]:
         dict = {

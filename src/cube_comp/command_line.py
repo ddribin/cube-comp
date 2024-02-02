@@ -1,10 +1,8 @@
 import argparse
 import inspect
 import logging
-from datetime import date
 from typing import Any
 
-import requests
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from .competition import Competition
