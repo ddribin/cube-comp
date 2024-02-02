@@ -1,12 +1,12 @@
 import argparse
 import inspect
-import json
 import logging
 from typing import Any
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from .competition import Competition
+from .known_competitions import KnownCompetitions
 from .wca_service import WCAEndpoint
 
 
@@ -76,29 +76,10 @@ class CommandLine:
         if self.known_comps_file is None:
             return competitions
 
-        known_comps = self.read_known_comps_file(self.known_comps_file)
-        self.logger.debug("Known comps: %r" % known_comps)
-        filtered_comps = [c for c in competitions if c.id not in known_comps]
-        self.logger.debug("Filtered comps: %r" % filtered_comps)
-        new_known_comps = [c.id for c in competitions]
-        self.logger.debug("New known comps: %r" % new_known_comps)
-        self.write_known_comps_file(self.known_comps_file, new_known_comps)
+        self.logger.info("Using known comps file: %r" % self.known_comps_file)
+        known_comps = KnownCompetitions(self.known_comps_file)
+        filtered_comps = known_comps.filter_competitions(competitions)
         return filtered_comps
-
-    def read_known_comps_file(self, file: str) -> list[str]:
-        self.logger.info("Reading known comps file: %r" % file)
-        try:
-            with open(file) as f:
-                known_comps = json.load(f)
-        except FileNotFoundError:
-            known_comps = []
-
-        return known_comps
-
-    def write_known_comps_file(self, file: str, known_comps: list[str]) -> None:
-        self.logger.info("Writing known comps file: %r" % file)
-        with open(file, mode="w") as f:
-            json.dump(known_comps, f, indent=2)
 
     def print_competitions(self, competitions: list[Competition]) -> None:
         env = Environment(
