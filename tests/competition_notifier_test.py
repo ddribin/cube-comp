@@ -54,7 +54,7 @@ class EmailServiceSpy(EmailService):
         self.sent_email_content = content
 
 
-class TestCompetitionNotifierContext:
+class CompetitionNotifierTestContext:
     def __init__(self) -> None:
         self.competition_api = FakeCompetitionAPI()
         self.email_service = EmailServiceSpy()
@@ -64,7 +64,7 @@ class TestCompetitionNotifierContext:
 
 class TestCompetitionNotifier:
     def test_notify_to_stdout_with_no_known_competitions(self) -> None:
-        ctx = TestCompetitionNotifierContext()
+        ctx = CompetitionNotifierTestContext()
 
         options = CompetitionNotifierOptions(
             stdout_io=ctx.stdout_io,
@@ -80,7 +80,7 @@ class TestCompetitionNotifier:
         assert ctx.email_service.send_email_count == 0
 
     def test_notify_to_stdout_with_known_competitions(self) -> None:
-        ctx = TestCompetitionNotifierContext()
+        ctx = CompetitionNotifierTestContext()
 
         options = CompetitionNotifierOptions(
             stdout_io=ctx.stdout_io,
@@ -97,7 +97,7 @@ class TestCompetitionNotifier:
         assert ctx.email_service.send_email_count == 0
 
     def test_notify_to_email_with_no_known_competitions(self) -> None:
-        ctx = TestCompetitionNotifierContext()
+        ctx = CompetitionNotifierTestContext()
 
         options = CompetitionNotifierOptions(
             stdout_io=ctx.stdout_io,
@@ -116,7 +116,7 @@ class TestCompetitionNotifier:
         assert ctx.email_service.sent_email_content.count("ID: ") == 3
 
     def test_notify_to_email_with_known_competitions(self) -> None:
-        ctx = TestCompetitionNotifierContext()
+        ctx = CompetitionNotifierTestContext()
 
         options = CompetitionNotifierOptions(
             stdout_io=ctx.stdout_io,
