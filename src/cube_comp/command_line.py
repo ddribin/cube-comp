@@ -1,6 +1,7 @@
 import argparse
 import inspect
 import logging
+import os
 import smtplib
 import sys
 from email.message import EmailMessage
@@ -27,8 +28,10 @@ class CommandLine:
         self.known_comps_file: str | None = None
         self.email_to: str | None = None
         self.email_from: str | None = None
-        self.email_host = "localhost"
-        self.email_port = 0
+        self.smtp_host = "localhost"
+        self.smtp_port: int
+        self.smtp_user: str | None = None
+        self.smtp_password: str | None = None
 
     def execute(self) -> int:
         try:
@@ -73,9 +76,10 @@ class CommandLine:
             metavar="ADDRESS",
         )
         parser.add_argument(
-            "--email-host", type=str, help="Email server host", metavar="HOST"
+            "--smtp-host", type=str, help="SMTP server host", metavar="HOST"
         )
-        parser.add_argument("--email-port", type=int, help="Email server port")
+        parser.add_argument("--smtp-port", type=int, help="SMTP port", default=0)
+        parser.add_argument("--smtp-user", type=str, help="SMTP user")
 
         parser.add_argument(
             "-L",
@@ -93,9 +97,15 @@ class CommandLine:
 
         self.email_to = args.email_to
         self.email_from = args.email_from
-        if args.email_host is not None:
-            self.email_host = args.email_host
-        self.email_port = args.email_port
+
+        if args.smtp_host is not None:
+            self.smtp_host = args.smtp_host
+        self.smtp_port = args.smtp_port
+        if args.smtp_user is not None:
+            self.smtp_user = args.smtp_user
+            self.smtp_password = os.environ.get("CUBE_COMP_EMAIL_PASSWORD")
+            if self.smtp_password is None:
+                raise CommandError("Expected password in CUBE_COMP_EMAIL_PASSWORD")
 
         self._log_option = args.log
 
@@ -157,12 +167,17 @@ class CommandLine:
             msg["To"] = email_address
             msg["From"] = from_address
 
-            s = smtplib.SMTP(self.email_host, port=self.email_port)
+            s = smtplib.SMTP(self.smtp_host, port=self.smtp_port)
+            if self.smtp_port == 587:
+                s.starttls()
+                if self.smtp_user is not None:
+                    assert self.smtp_password is not None
+                    s.login(self.smtp_user, self.smtp_password)
             s.send_message(msg)
             s.quit()
         except ConnectionRefusedError:
             raise CommandError(
-                f"Cannot send email: Connection refused: {self.email_host}"
+                f"Cannot send email: Connection refused: {self.smtp_host}"
             )
 
     def render_competitions(self, competitions: list[Competition]) -> str:
