@@ -1,8 +1,17 @@
 import smtplib
 from email.message import EmailMessage
 
+from typing_extensions import Protocol
 
-class EmailService:
+
+class EmailService(Protocol):
+    def send_email(
+        self, to_address: str, from_address: str, subject: str, content: str
+    ) -> None:
+        pass
+
+
+class SMTPEmailService(EmailService):
     def __init__(
         self,
         smtp_host: str,

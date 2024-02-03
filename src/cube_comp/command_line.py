@@ -8,9 +8,9 @@ from typing import Any
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from .competition import Competition
-from .email_service import EmailService
+from .competition_api import WCACompetitionAPI
+from .email_service import SMTPEmailService
 from .known_competitions import KnownCompetitions
-from .wca_service import WCAEndpoint
 
 
 class CommandError(Exception):
@@ -42,6 +42,10 @@ class CommandLine:
             sys.stderr.write(f"{self.prog}: {message}\n")
             result = e.args[1] if len(e.args) == 2 else 1
             return result
+        except Exception as e:
+            self.logger.exception(e)
+            sys.stderr.write(f"{self.prog}: Caught exception: {e}\n")
+            return 2
 
     def run(self) -> None:
         logging.basicConfig(level=self.log_level)
@@ -109,8 +113,8 @@ class CommandLine:
         self._log_option = args.log
 
     def fetch_competitions(self) -> list[Competition]:
-        service = WCAEndpoint()
-        json_competitions = service.fetch_competitions(
+        competition_api = WCACompetitionAPI()
+        json_competitions = competition_api.fetch_competitions(
             query=self.query, country=self.country
         )
         competitions = [
@@ -158,7 +162,7 @@ class CommandLine:
                 "Emailing %r competitions to %r", len(competitions), to_address
             )
 
-            email_service = EmailService(
+            email_service = SMTPEmailService(
                 self.smtp_host, self.smtp_port, self.smtp_user, self.smtp_password
             )
 

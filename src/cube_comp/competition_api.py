@@ -6,7 +6,7 @@ import requests
 from typing_extensions import Protocol
 
 
-class WCAService(Protocol):
+class CompetitionAPI(Protocol):
     def fetch_competitions(
         self, query: str | None, country: str | None, sort_desc=False
     ) -> list[dict[str, Any]]:
@@ -22,7 +22,7 @@ class WCAService(Protocol):
 #
 # Code for the `Competition` model. The `search` method shows possible parameters:
 # https://github.com/thewca/worldcubeassociation.org/blob/master/WcaOnRails/app/models/competition.rb
-class WCAEndpoint(WCAService):
+class WCACompetitionAPI(CompetitionAPI):
     def __init__(self) -> None:
         super().__init__()
         self.logger = logging.getLogger(__name__)

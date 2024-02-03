@@ -1,3 +1,3 @@
 from .competition import Competition
+from .competition_api import CompetitionAPI, WCACompetitionAPI
 from .known_competitions import KnownCompetitions
-from .wca_service import WCAEndpoint, WCAService
