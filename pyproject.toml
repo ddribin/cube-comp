@@ -28,4 +28,4 @@ dev = [
 cube-comp = "cube_comp.command_line:main"
 
 [tool.setuptools.package-data]
-"cube_comp" = ["py.typed", "*.j2"]
+"cube_comp" = ["py.typed", "templates/*.j2"]
