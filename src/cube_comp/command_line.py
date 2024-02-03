@@ -2,14 +2,13 @@ import argparse
 import inspect
 import logging
 import os
-import smtplib
 import sys
-from email.message import EmailMessage
 from typing import Any
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 from .competition import Competition
+from .email_service import EmailService
 from .known_competitions import KnownCompetitions
 from .wca_service import WCAEndpoint
 
@@ -149,33 +148,30 @@ class CommandLine:
         self, competitions: list[Competition], email_address: str
     ) -> None:
         if len(competitions) > 0:
-            self.logger.info(
-                "Emailing %r competitions to %r", len(competitions), email_address
-            )
             self.send_email(competitions, email_address)
         else:
             self.logger.info("No competitions, so skipping email")
 
-    def send_email(self, competitions: list[Competition], email_address: str) -> None:
+    def send_email(self, competitions: list[Competition], to_address: str) -> None:
         try:
+            self.logger.info(
+                "Emailing %r competitions to %r", len(competitions), to_address
+            )
+
+            email_service = EmailService(
+                self.smtp_host, self.smtp_port, self.smtp_user, self.smtp_password
+            )
+
             rendered = self.render_competitions(competitions)
             from_address = (
-                self.email_from if self.email_from is not None else self.email_to
+                self.email_from if self.email_from is not None else to_address
             )
-            msg = EmailMessage()
-            msg.set_content(rendered)
-            msg["Subject"] = "WCA Competition Notification"
-            msg["To"] = email_address
-            msg["From"] = from_address
-
-            s = smtplib.SMTP(self.smtp_host, port=self.smtp_port)
-            if self.smtp_port == 587:
-                s.starttls()
-                if self.smtp_user is not None:
-                    assert self.smtp_password is not None
-                    s.login(self.smtp_user, self.smtp_password)
-            s.send_message(msg)
-            s.quit()
+            email_service.send_email(
+                to_address=to_address,
+                from_address=from_address,
+                subject="WCA Competition Notification",
+                content=rendered,
+            )
         except ConnectionRefusedError:
             raise CommandError(
                 f"Cannot send email: Connection refused: {self.smtp_host}"
