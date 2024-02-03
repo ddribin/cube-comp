@@ -130,8 +130,9 @@ class CommandLine:
             return competitions
 
         self.logger.info("Using known comps file: %r" % self.known_comps_file)
-        known_comps = KnownCompetitions(self.known_comps_file)
-        filtered_comps = known_comps.filter_competitions(competitions)
+        with open(self.known_comps_file, "a+") as file_io:
+            known_comps = KnownCompetitions(file_io)
+            filtered_comps = known_comps.filter_competitions(competitions)
         return filtered_comps
 
     def output_competitions(self, competitions: list[Competition]) -> None:

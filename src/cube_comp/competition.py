@@ -17,7 +17,7 @@ class Competition:
     website: str
 
     # Optional
-    display_name: str | None
+    display_name: str | None = None
 
     @classmethod
     def from_dict(cls, dict: dict) -> Competition:

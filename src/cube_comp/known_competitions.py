@@ -1,26 +1,25 @@
 import json
 import logging
+from typing import TextIO
 
 from .competition import Competition
 
 
 class KnownCompetitions:
-    def __init__(self, file: str | None) -> None:
+    def __init__(self, file_io: TextIO | None) -> None:
         self.logger = logging.getLogger(__name__)
-        self.file = file
+        assert file_io is not None
+        self.file_io: TextIO = file_io
 
     def filter_competitions(self, competitions: list[Competition]) -> list[Competition]:
-        if self.file is None:
-            return competitions
-
-        known_comps = self.read_known_comps_file(self.file)
+        known_comps = self._read_known_comps_file()
         self.logger.debug("Known comps: %r" % known_comps)
         filtered_comps = self._filter_competitions(competitions, known_comps)
         self.logger.debug("Filtered comps: %r" % filtered_comps)
 
         new_known_comps = [c.id for c in competitions]
         self.logger.debug("New known comps: %r" % new_known_comps)
-        self.write_known_comps_file(self.file, new_known_comps)
+        self._write_known_comps_file(new_known_comps)
         return filtered_comps
 
     def _filter_competitions(
@@ -38,16 +37,17 @@ class KnownCompetitions:
                 )
         return filtered_comps
 
-    def read_known_comps_file(self, file: str) -> list[str]:
-        try:
-            with open(file, mode="r") as f:
-                known_comps = json.load(f)
-        except FileNotFoundError:
-            known_comps = []
+    def _read_known_comps_file(self) -> list[str]:
+        self.file_io.seek(0)
+        known_comps_json = self.file_io.read()
+        if known_comps_json == "":
+            return []
+        known_comps = json.loads(known_comps_json)
         self.logger.info("Read %r known comps" % len(known_comps))
         return known_comps
 
-    def write_known_comps_file(self, file: str, known_comps: list[str]) -> None:
+    def _write_known_comps_file(self, known_comps: list[str]) -> None:
         self.logger.info("Writing %r known comps" % len(known_comps))
-        with open(file, mode="w") as f:
-            json.dump(known_comps, f, indent=2)
+        self.file_io.seek(0)
+        self.file_io.truncate(0)
+        json.dump(known_comps, self.file_io, indent=2)
