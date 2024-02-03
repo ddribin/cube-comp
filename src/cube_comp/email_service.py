@@ -5,6 +5,15 @@ from typing_extensions import Protocol
 
 
 class EmailService(Protocol):
+    def configure_smtp(
+        self,
+        smtp_host: str,
+        smtp_port: int,
+        smtp_user: str | None = None,
+        smtp_password: str | None = None,
+    ) -> None:
+        pass
+
     def send_email(
         self, to_address: str, from_address: str, subject: str, content: str
     ) -> None:
@@ -12,7 +21,13 @@ class EmailService(Protocol):
 
 
 class SMTPEmailService(EmailService):
-    def __init__(
+    def __init__(self) -> None:
+        self.smtp_host = "localhost"
+        self.smtp_port = 25
+        self.smtp_user: str | None = None
+        self.smtp_password: str | None = None
+
+    def configure_smtp(
         self,
         smtp_host: str,
         smtp_port: int,
