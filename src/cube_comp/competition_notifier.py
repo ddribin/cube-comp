@@ -145,15 +145,6 @@ class CompetitionNotifier:
         self._competition_api = competition_api
         self._email_service = email_service
 
-    def configure_smtp(
-        self,
-        smtp_host: str,
-        smtp_port: int,
-        smtp_user: str | None = None,
-        smtp_password: str | None = None,
-    ) -> None:
-        pass
-
     def notify(self, options: CompetitionNotifierOptions) -> None:
         invocation = CompetitionNotifierInvocation(
             self._competition_api, self._email_service, options
