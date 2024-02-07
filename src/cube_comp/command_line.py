@@ -1,8 +1,7 @@
 import argparse
 import logging
-import os
 import sys
-from io import StringIO
+from pathlib import Path
 
 from .command_error import CommandError
 from .competition_api import WCACompetitionAPI
@@ -15,7 +14,7 @@ class CommandLine:
         self.logger = logging.getLogger(__name__)
         self._log_option: str | None = None
         self.prog: str
-        self.notifier_opts = CompetitionNotifierOptions(stdout_io=StringIO())
+        self.notifier_opts = CompetitionNotifierOptions(stdout_io=sys.stdout)
         self.known_comps_file: str | None = None
 
     def execute(self) -> int:
@@ -76,6 +75,9 @@ class CommandLine:
         )
         parser.add_argument("--smtp-port", type=int, help="SMTP port", default=0)
         parser.add_argument("--smtp-user", type=str, help="SMTP user")
+        parser.add_argument(
+            "--smtp-password-file", type=Path, help="SMTP password file"
+        )
 
         parser.add_argument(
             "-L",
@@ -99,13 +101,21 @@ class CommandLine:
         if args.smtp_host is not None:
             opts.smtp_host = args.smtp_host
         opts.smtp_port = args.smtp_port
-        if args.smtp_user is not None:
-            opts.smtp_user = args.smtp_user
-            opts.smtp_password = os.environ.get("CUBE_COMP_EMAIL_PASSWORD")
-            if opts.smtp_password is None:
-                raise CommandError("Expected password in CUBE_COMP_EMAIL_PASSWORD")
-
+        self._parse_smtp_user_and_password(args, opts)
         self._log_option = args.log
+
+    def _parse_smtp_user_and_password(
+        self, args: argparse.Namespace, opts: CompetitionNotifierOptions
+    ):
+        # If there's a user the must be a password file
+        if args.smtp_user is None:
+            return
+        if args.smtp_password_file is None:
+            raise CommandError("SMTP user specified but no password file")
+        smtp_password_file: Path = args.smtp_password_file
+
+        opts.smtp_user = args.smtp_user
+        opts.smtp_password = smtp_password_file.read_text().rstrip()
 
     @property
     def log_level(self) -> int:

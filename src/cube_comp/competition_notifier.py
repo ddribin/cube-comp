@@ -47,6 +47,11 @@ class CompetitionNotifierInvocation:
         self.output_competitions(filtered_competitions)
 
     def fetch_competitions(self) -> list[Competition]:
+        self.logger.info(
+            "Fetching competitions with query: %r, country: %r",
+            self.opts.query,
+            self.opts.country,
+        )
         json_competitions = self.competition_api.fetch_competitions(
             query=self.opts.query, country=self.opts.country
         )
@@ -63,6 +68,7 @@ class CompetitionNotifierInvocation:
 
     def filter_competitions(self, competitions: list[Competition]) -> list[Competition]:
         if self.opts.known_competitions_io is None:
+            self.logger.info("Not filtering competitions")
             return competitions
 
         known_comps = KnownCompetitions(self.opts.known_competitions_io)
@@ -76,6 +82,7 @@ class CompetitionNotifierInvocation:
             self.email_competitions(competitions, self.opts.email_to)
 
     def print_competitions(self, competitions: list[Competition]) -> None:
+        self.logger.info("Printing %r competitions", len(competitions))
         rendered = self.render_competitions(competitions)
         print(rendered, file=self.opts.stdout_io)
 
