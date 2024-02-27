@@ -22,6 +22,7 @@ class CompetitionNotifierOptions:
 
     email_to: str | None = None
     email_from: str | None = None
+    email_subject: str | None = None
 
     smtp_host = "localhost"
     smtp_port = 25
@@ -107,15 +108,18 @@ class CompetitionNotifierInvocation:
                 self.opts.smtp_password,
             )
 
-            rendered = self.render_competitions(competitions)
-            from_address = (
-                self.opts.email_from if self.opts.email_from is not None else to_address
-            )
+            rendered_content = self.render_competitions(competitions)
+            from_address = self.opts.email_from
+            if from_address is None:
+                from_address = to_address
+            subject = self.opts.email_subject
+            if subject is None:
+                subject = "WCA Competition Notification"
             self.email_service.send_email(
                 to_address=to_address,
                 from_address=from_address,
-                subject="WCA Competition Notification",
-                content=rendered,
+                subject=subject,
+                content=rendered_content,
             )
         except ConnectionRefusedError:
             raise CommandError(

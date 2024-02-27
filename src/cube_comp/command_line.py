@@ -71,6 +71,12 @@ class CommandLine:
             metavar="ADDRESS",
         )
         parser.add_argument(
+            "--email-subject",
+            type=str,
+            help="Use SUBJECT as the subject of the email",
+            metavar="SUBJECT",
+        )
+        parser.add_argument(
             "--smtp-host", type=str, help="SMTP server host", metavar="HOST"
         )
         parser.add_argument("--smtp-port", type=int, help="SMTP port", default=0)
@@ -97,6 +103,7 @@ class CommandLine:
 
         opts.email_to = args.email_to
         opts.email_from = args.email_from
+        opts.email_subject = args.email_subject
 
         if args.smtp_host is not None:
             opts.smtp_host = args.smtp_host

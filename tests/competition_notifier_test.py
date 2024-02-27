@@ -37,6 +37,8 @@ class EmailServiceSpy(EmailService):
         super().__init__()
         self.configure_smtp_count = 0
         self.send_email_count = 0
+        self.sent_email_subject: str | None = None
+        self.sent_email_content: str | None = None
 
     def configure_smtp(
         self,
@@ -51,6 +53,7 @@ class EmailServiceSpy(EmailService):
         self, to_address: str, from_address: str, subject: str, content: str
     ) -> None:
         self.send_email_count += 1
+        self.sent_email_subject = subject
         self.sent_email_content = content
 
 
@@ -113,7 +116,12 @@ class TestCompetitionNotifier:
         assert ctx.stdout_io.getvalue().count("ID: ") == 0
         assert ctx.email_service.configure_smtp_count == 1
         assert ctx.email_service.send_email_count == 1
-        assert ctx.email_service.sent_email_content.count("ID: ") == 3
+        subject = ctx.email_service.sent_email_subject
+        assert subject is not None
+        assert subject == "WCA Competition Notification"
+        content = ctx.email_service.sent_email_content
+        assert content is not None
+        assert content.count("ID: ") == 3
 
     def test_notify_to_email_with_known_competitions(self) -> None:
         ctx = CompetitionNotifierTestContext()
@@ -133,3 +141,21 @@ class TestCompetitionNotifier:
         assert ctx.stdout_io.getvalue().count("ID: ") == 0
         assert ctx.email_service.configure_smtp_count == 0
         assert ctx.email_service.send_email_count == 0
+
+    def test_notify_to_email_with_subject(self) -> None:
+        ctx = CompetitionNotifierTestContext()
+
+        options = CompetitionNotifierOptions(
+            stdout_io=ctx.stdout_io,
+            query="illinois",
+            country="US",
+            email_to="user1@example.com",
+            email_from="user2@example.com",
+            email_subject="My Subject",
+        )
+
+        ctx.notifier.notify(options)
+
+        subject = ctx.email_service.sent_email_subject
+        assert subject is not None
+        assert subject == "My Subject"
